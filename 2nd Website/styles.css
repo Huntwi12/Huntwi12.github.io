@@ -25,6 +25,11 @@ html {
     scroll-behavior: smooth;
 }
 
+html,
+body {
+    overflow-x: hidden;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     color: var(--dark-text);
@@ -261,8 +266,15 @@ a {
 }
 
 @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
 }
 
 /* ==================== Stats Bar ==================== */
@@ -1650,12 +1662,15 @@ a {
         transform: none;
         box-shadow: none;
         background-color: #f9fafb;
+        padding: 0;
+        margin: 0;
     }
 
     .dropdown.active .dropdown-menu {
         opacity: 1;
         visibility: visible;
         max-height: 300px;
+        padding: 10px 0;
     }
 
     .hero {
@@ -1690,6 +1705,46 @@ a {
     .about-features {
         grid-template-columns: 1fr;
     }
+
+    /* Hydro Solutions Mobile */
+    .hydro-hero,
+    .hydro-cta {
+        padding: 40px 20px;
+    }
+
+    .hydro-intro h2 {
+        font-size: 28px;
+    }
+
+    .hydro-cta-content h3 {
+        font-size: 24px;
+    }
+
+    .hydro-product-card {
+        padding: 25px 20px;
+    }
+
+    .hydro-clients {
+        padding: 25px 20px;
+    }
+
+    /* Inner Pages Mobile */
+    .content-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .page-hero h1 {
+        font-size: 32px;
+    }
+
+    .content-section h2 {
+        font-size: 28px;
+    }
+
+    .cta-section {
+        padding: 40px 20px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1706,8 +1761,9 @@ a {
         font-size: 14px;
     }
 
-    .stat-row {
-        grid-template-columns: repeat(2, 1fr);
+    .stat-row,
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 20px;
     }
 
@@ -1737,5 +1793,29 @@ a {
 
     .footer-content {
         grid-template-columns: 1fr;
+    }
+
+    .nav-wrapper {
+        padding: 8px 0;
+    }
+
+    .logo img {
+        height: 50px;
+    }
+
+    /* Fix Hydro Tag wrap */
+    .benefit-tag {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .industries-tags {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .industry-tag {
+        width: 100%;
+        text-align: center;
     }
 }
