@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLF | Cleveland-Cliffs Earnings Dashboard (2020–2025)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --orange: #ffa657;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; }
+
+  /* HEADER */
+  .header { background: linear-gradient(135deg, #1a2332 0%, #0d1117 100%); border-bottom: 1px solid var(--border); padding: 20px 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .header-ticker { font-size: 32px; font-weight: 800; color: var(--accent); letter-spacing: -1px; }
+  .header-name { font-size: 16px; color: var(--muted); }
+  .header-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .header-stats { display: flex; gap: 24px; margin-left: auto; flex-wrap: wrap; }
+  .stat-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 16px; text-align: center; }
+  .stat-pill .label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-pill .value { font-size: 18px; font-weight: 700; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .beat { background: rgba(63, 185, 80, 0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .miss { background: rgba(248, 81, 73, 0.15); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+  .inline-beat { background: rgba(63, 185, 80, 0.15); color: var(--green); }
+  .inline-miss { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+  .pos { color: var(--green); }
+  .neg { color: var(--red); }
+  .neu { color: var(--muted); }
+
+  /* TABS */
+  .tabs-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; gap: 0; overflow-x: auto; }
+  .tab-btn { padding: 14px 20px; background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px; font-weight: 500; border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* CONTENT */
+  .tab-content { display: none; padding: 24px; max-width: 1400px; margin: 0 auto; }
+  .tab-content.active { display: block; }
+
+  /* CARDS */
+  .cards-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; }
+  .card .card-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .card .card-value { font-size: 24px; font-weight: 700; }
+  .card .card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .card.highlight { border-color: var(--accent); }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: var(--surface2); padding: 10px 14px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(88,166,255,0.04); }
+  tbody td { padding: 10px 14px; white-space: nowrap; }
+  .year-header td { background: var(--surface2); color: var(--accent); font-weight: 700; font-size: 12px; }
+
+  /* CHARTS */
+  .chart-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 20px; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .chart-card h3 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+  canvas { max-height: 300px; }
+
+  /* NARRATIVES */
+  .year-section { margin-bottom: 32px; }
+  .year-title { font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .year-title .year-summary { font-size: 13px; color: var(--muted); font-weight: 400; }
+  .quarters-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .q-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; }
+  .q-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .q-label { font-size: 15px; font-weight: 700; }
+  .q-date { font-size: 11px; color: var(--muted); }
+  .q-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .q-metric { background: var(--surface2); border-radius: 6px; padding: 8px 10px; }
+  .q-metric .m-label { font-size: 10px; color: var(--muted); text-transform: uppercase; }
+  .q-metric .m-value { font-size: 15px; font-weight: 700; }
+  .q-narrative { font-size: 12px; color: var(--muted); line-height: 1.6; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 4px; }
+  .q-narrative strong { color: var(--text); }
+
+  /* DEBT TAB */
+  .debt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .debt-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .debt-card .year { font-size: 22px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+  .debt-card .metric { margin: 6px 0; display: flex; justify-content: space-between; }
+  .debt-card .metric .key { font-size: 12px; color: var(--muted); }
+  .debt-card .metric .val { font-size: 12px; font-weight: 600; }
+
+  /* SECTION HEADER */
+  .section-header { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 12px; margin-top: 24px; }
+  .section-header:first-child { margin-top: 0; }
+
+  /* OVERVIEW DETAIL */
+  .overview-summary { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 24px; }
+  .overview-summary p { color: var(--muted); font-size: 13px; line-height: 1.7; }
+  .overview-summary strong { color: var(--text); }
+
+  /* ANNUAL TABLE */
+  .annual-highlight { background: rgba(88, 166, 255, 0.06); }
+
+  /* FILTER ROW */
+  .filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .filter-label { font-size: 12px; color: var(--muted); }
+  .filter-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 12px; transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { background: rgba(88,166,255,0.15); border-color: var(--accent); color: var(--accent); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 700px) {
+    .chart-grid { grid-template-columns: 1fr; }
+    .header-stats { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="header-ticker">CLF</div>
+    <div class="header-name">Cleveland-Cliffs Inc.</div>
+    <div class="header-subtitle">NYSE · Steel & Iron Ore Producer · North America's Largest Flat-Rolled Steel Maker</div>
+  </div>
+  <div class="header-stats">
+    <div class="stat-pill">
+      <div class="label">6-Year Revenue Peak</div>
+      <div class="value" style="color:var(--green)">$23.0B</div>
+      <div style="font-size:11px;color:var(--muted)">2022 (Record)</div>
+    </div>
+    <div class="stat-pill">
+      <div class="label">Best EPS Year</div>
+      <div class="value" style="color:var(--green)">$5.36</div>
+      <div style="font-size:11px;color:var(--muted)">2021 (Steel Boom)</div>
+    </div>
+    <div class="stat-pill">
+      <div class="label">2025 Adj. EBITDA</div>
+      <div class="value" style="color:var(--red)">$37M</div>
+      <div style="font-size:11px;color:var(--muted)">Full Year 2025</div>
+    </div>
+    <div class="stat-pill">
+      <div class="label">Net Debt (2025)</div>
+      <div class="value" style="color:var(--yellow)">~$1.3B</div>
+      <div style="font-size:11px;color:var(--muted)">Down from ~$2.9B (2023)</div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-bar">
+  <button class="tab-btn active" onclick="showTab('overview')">📊 Overview</button>
+  <button class="tab-btn" onclick="showTab('quarterly')">📅 Quarterly Data</button>
+  <button class="tab-btn" onclick="showTab('annual')">📆 Annual Summary</button>
+  <button class="tab-btn" onclick="showTab('charts')">📈 Charts</button>
+  <button class="tab-btn" onclick="showTab('narratives')">📝 Narratives</button>
+  <button class="tab-btn" onclick="showTab('debt')">💰 Debt & Health</button>
+  <button class="tab-btn" onclick="showTab('future')">🔭 Future Outlook</button>
+  <button class="tab-btn" onclick="showTab('middletown')">🏭 Middletown Works</button>
+</div>
+
+<!-- ============================================================ OVERVIEW TAB -->
+<div class="tab-content active" id="tab-overview">
+  <div class="overview-summary">
+    <p>Cleveland-Cliffs (CLF) underwent a <strong>dramatic transformation from 2020–2025</strong>: it began as a pure iron ore pellet producer, then became North America's largest flat-rolled steel producer through two landmark acquisitions — <strong>AK Steel (March 2020)</strong> and <strong>ArcelorMittal USA (December 2020)</strong>. It later acquired <strong>Stelco Holdings (November 2024)</strong>. This period spans a full cycle: COVID disruption → steel supercycle peak → pricing collapse → tariff recovery.</p>
+  </div>
+
+  <div class="cards-row">
+    <div class="card highlight">
+      <div class="card-label">2020 Revenue</div>
+      <div class="card-value">$5.35B</div>
+      <div class="card-sub neg">EPS: -$0.32 · Loss year</div>
+    </div>
+    <div class="card">
+      <div class="card-label">2021 Revenue</div>
+      <div class="card-value pos">$20.4B</div>
+      <div class="card-sub pos">EPS: $5.36 · Best year</div>
+    </div>
+    <div class="card">
+      <div class="card-label">2022 Revenue</div>
+      <div class="card-value pos">$23.0B</div>
+      <div class="card-sub pos">EPS: $2.55 · Record rev.</div>
+    </div>
+    <div class="card">
+      <div class="card-label">2023 Revenue</div>
+      <div class="card-value neu">$22.0B</div>
+      <div class="card-sub neu">EPS: $0.78 · Soft year</div>
+    </div>
+    <div class="card">
+      <div class="card-label">2024 Revenue</div>
+      <div class="card-value neg">$19.2B</div>
+      <div class="card-sub neg">EPS: -$1.57 · Loss year</div>
+    </div>
+    <div class="card">
+      <div class="card-label">2025 Revenue</div>
+      <div class="card-value neg">$18.6B</div>
+      <div class="card-sub neg">EPS: -$2.91 · Worst year</div>
+    </div>
+  </div>
+
+  <div class="section-header">Key Earnings Drivers by Era</div>
+  <div class="cards-row" style="grid-template-columns: repeat(auto-fill, minmax(280px,1fr))">
+    <div class="card">
+      <div class="card-label" style="color:var(--red)">2020 — Transformation Under Fire</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">COVID-19 pandemic hit just as AK Steel acquisition closed. Auto plants shut, steel demand cratered. ArcelorMittal USA acquisition added massive scale in Dec 2020. Full year net loss, but Q4 showed recovery potential.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--green)">2021 — Steel Supercycle Peak</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">HRC steel prices surged from ~$700/ton to ~$1,900/ton. First full year as an integrated steel giant. Record quarterly results in Q2, Q3, Q4. EPS of $5.36 — the best in company history. $1B buyback launched.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--yellow)">2022 — Record Revenue, Fading Prices</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Full-year revenue hit a record $23B. Russia-Ukraine war initially boosted prices, but HRC fell from ~$1,400 to ~$600 by year-end. Q3 and Q4 missed estimates as margins compressed. $1.8B pension liability reduction.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--orange)">2023 — Navigating the Downturn</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Steel prices stabilized at lower levels. Strong Q3 beat on record auto shipments (despite UAW strike impact in Q3–Q4). Long-term automotive contracts provided pricing floor. Net debt fell to ~$2.9B. EPS $0.78 GAAP.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--red)">2024 — Imports & Stelco Drag</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Import competition and weak HRC prices (~$700/ton avg) crushed margins. Stelco acquisition closed Nov 2024 adding ~C$3.3B in consideration and restructuring charges. Missed estimates in all 4 quarters. Net loss of $708M GAAP.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--purple)">2025 — Tariffs & Restructuring</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Worst full year on record. Q1 devastating before Trump's 25% Section 232 tariffs (March 2025) took effect. H2 showed improvement as tariffs curbed imports. Q4 beat estimates. Asset sales and cost cuts reduced net debt to ~$1.3B.</div>
+    </div>
+  </div>
+
+  <div class="section-header">Recent Quarters at a Glance</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Quarter</th>
+          <th>Revenue</th>
+          <th>Adj. EPS Actual</th>
+          <th>Adj. EPS Est.</th>
+          <th>Surprise</th>
+          <th>Adj. EBITDA</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Q4 2025</strong></td><td>$4.3B</td><td>-$0.43</td><td>-$0.62</td><td class="pos">+$0.19</td><td>~$80M</td><td><span class="badge beat">Beat</span></td></tr>
+        <tr><td>Q3 2025</td><td>$4.7B</td><td>-$0.51</td><td>-$0.45</td><td class="neg">-$0.06</td><td>$143M</td><td><span class="badge miss">Miss</span></td></tr>
+        <tr><td>Q2 2025</td><td>$4.9B</td><td>-$0.50</td><td>-$0.63</td><td class="pos">+$0.13</td><td>$97M</td><td><span class="badge beat">Beat</span></td></tr>
+        <tr><td>Q1 2025</td><td>$4.6B</td><td>-$0.92</td><td>-$0.60</td><td class="neg">-$0.32</td><td>-$174M</td><td><span class="badge miss">Miss</span></td></tr>
+        <tr><td>Q4 2024</td><td>$4.3B</td><td>-$0.68</td><td>-$0.66</td><td class="neg">-$0.02</td><td>~-$50M</td><td><span class="badge miss">Miss</span></td></tr>
+        <tr><td>Q3 2024</td><td>$4.6B</td><td>-$0.33</td><td>-$0.31</td><td class="neg">-$0.02</td><td>~$100M</td><td><span class="badge miss">Miss</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ QUARTERLY TAB -->
+<div class="tab-content" id="tab-quarterly">
+  <div class="filter-row">
+    <span class="filter-label">Filter by year:</span>
+    <button class="filter-btn active" onclick="filterYear('all',this)">All Years</button>
+    <button class="filter-btn" onclick="filterYear('2020',this)">2020</button>
+    <button class="filter-btn" onclick="filterYear('2021',this)">2021</button>
+    <button class="filter-btn" onclick="filterYear('2022',this)">2022</button>
+    <button class="filter-btn" onclick="filterYear('2023',this)">2023</button>
+    <button class="filter-btn" onclick="filterYear('2024',this)">2024</button>
+    <button class="filter-btn" onclick="filterYear('2025',this)">2025</button>
+  </div>
+  <div class="table-wrap">
+    <table id="quarterly-table">
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th>Report Date</th>
+          <th>Revenue</th>
+          <th>GAAP EPS</th>
+          <th>Adj. EPS</th>
+          <th>EPS Est.</th>
+          <th>Surprise</th>
+          <th>Adj. EBITDA</th>
+          <th>Net Income (GAAP)</th>
+          <th>Beat / Miss</th>
+        </tr>
+      </thead>
+      <tbody id="quarterly-tbody">
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================ ANNUAL TAB -->
+<div class="tab-content" id="tab-annual">
+  <div class="table-wrap" style="margin-bottom:24px">
+    <table>
+      <thead>
+        <tr>
+          <th>Year</th>
+          <th>Revenue</th>
+          <th>YoY Rev Δ</th>
+          <th>GAAP EPS</th>
+          <th>Adj. EPS</th>
+          <th>Net Income</th>
+          <th>Adj. EBITDA</th>
+          <th>EBITDA Margin</th>
+          <th>Long-Term Debt</th>
+          <th>Net Debt</th>
+          <th>Theme</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="annual-highlight">
+          <td><strong>2020</strong></td><td>$5.35B</td><td class="pos">+254% (acq.)</td>
+          <td class="neg">-$0.32</td><td class="neg">-$0.14</td>
+          <td class="neg">-$81M</td><td>~$500M</td><td>9.3%</td>
+          <td>~$5.4B</td><td>~$4.8B</td>
+          <td>Transformation</td>
+        </tr>
+        <tr>
+          <td><strong>2021</strong></td><td>$20.4B</td><td class="pos">+281%</td>
+          <td class="pos">$5.36</td><td class="pos">$5.72</td>
+          <td class="pos">$3.0B</td><td>$5.3B</td><td>26.0%</td>
+          <td>~$4.1B</td><td>~$3.1B</td>
+          <td>Steel Supercycle</td>
+        </tr>
+        <tr class="annual-highlight">
+          <td><strong>2022</strong></td><td>$23.0B</td><td class="pos">+12.7%</td>
+          <td class="pos">$2.55</td><td class="pos">$2.87</td>
+          <td class="pos">$1.4B</td><td>$3.2B</td><td>13.9%</td>
+          <td>~$3.5B</td><td>~$3.0B</td>
+          <td>Record Revenue, Price Decline</td>
+        </tr>
+        <tr>
+          <td><strong>2023</strong></td><td>$22.0B</td><td class="neg">-4.3%</td>
+          <td class="pos">$0.78</td><td class="pos">$1.07</td>
+          <td class="pos">$450M</td><td>$1.9B</td><td>8.6%</td>
+          <td>~$3.5B</td><td>~$2.9B</td>
+          <td>Stabilization</td>
+        </tr>
+        <tr class="annual-highlight">
+          <td><strong>2024</strong></td><td>$19.2B</td><td class="neg">-12.7%</td>
+          <td class="neg">-$1.57</td><td class="neg">-$0.73</td>
+          <td class="neg">-$708M</td><td>$780M</td><td>4.1%</td>
+          <td>~$6.5B</td><td>~$2.4B</td>
+          <td>Imports + Stelco Drag</td>
+        </tr>
+        <tr>
+          <td><strong>2025</strong></td><td>$18.6B</td><td class="neg">-3.1%</td>
+          <td class="neg">-$2.91</td><td class="neg">-$2.48</td>
+          <td class="neg">-$1.4B</td><td>$37M</td><td>0.2%</td>
+          <td>~$7.3B</td><td>~$1.3B</td>
+          <td>Tariffs + Restructuring</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-header">Year-over-Year Performance Heatmap</div>
+  <div class="cards-row" style="grid-template-columns:repeat(6,1fr)">
+    <div class="card" style="border-color:var(--red)">
+      <div class="card-label">2020</div>
+      <div class="card-value neg" style="font-size:20px">-$0.32</div>
+      <div class="card-sub">GAAP EPS</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">COVID + Acquisitions. Full year net loss despite record Q4.</div>
+    </div>
+    <div class="card" style="border-color:var(--green)">
+      <div class="card-label">2021</div>
+      <div class="card-value pos" style="font-size:20px">$5.36</div>
+      <div class="card-sub">GAAP EPS</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">Best year ever. Steel prices surged 170% YoY.</div>
+    </div>
+    <div class="card" style="border-color:var(--yellow)">
+      <div class="card-label">2022</div>
+      <div class="card-value pos" style="font-size:20px">$2.55</div>
+      <div class="card-sub">GAAP EPS</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">Record revenue but profitability fell 56% from 2021.</div>
+    </div>
+    <div class="card" style="border-color:var(--orange)">
+      <div class="card-label">2023</div>
+      <div class="card-value pos" style="font-size:20px">$0.78</div>
+      <div class="card-sub">GAAP EPS</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">Managed soft prices via automotive contracts. Debt reduced.</div>
+    </div>
+    <div class="card" style="border-color:var(--red)">
+      <div class="card-label">2024</div>
+      <div class="card-value neg" style="font-size:20px">-$1.57</div>
+      <div class="card-sub">GAAP EPS</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">Import surge + weak HRC prices + Stelco costs.</div>
+    </div>
+    <div class="card" style="border-color:var(--red)">
+      <div class="card-label">2025</div>
+      <div class="card-value neg" style="font-size:20px">-$2.91</div>
+      <div class="card-sub">GAAP EPS</div>
+      <div style="margin-top:8px;font-size:11px;color:var(--muted)">Worst EPS ever. Tariffs helped H2 but too late for full year.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ CHARTS TAB -->
+<div class="tab-content" id="tab-charts">
+  <div class="chart-grid">
+    <div class="chart-card">
+      <h3>📊 Annual Revenue (2020–2025)</h3>
+      <canvas id="chart-revenue"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>💵 Annual GAAP EPS (2020–2025)</h3>
+      <canvas id="chart-eps-annual"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>📈 Quarterly Revenue (2020–2025)</h3>
+      <canvas id="chart-q-revenue"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>💹 Quarterly Adj. EPS (2020–2025)</h3>
+      <canvas id="chart-q-eps"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>⚡ Adj. EBITDA by Quarter (2020–2025)</h3>
+      <canvas id="chart-ebitda"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>🏦 Net Debt Trend (2020–2025)</h3>
+      <canvas id="chart-debt"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ NARRATIVES TAB -->
+<div class="tab-content" id="tab-narratives">
+
+  <!-- 2020 -->
+  <div class="year-section">
+    <div class="year-title">2020 <span class="year-summary">— Transformation Under COVID · Revenue: $5.35B · EPS: -$0.32 · Net Loss: $81M</span></div>
+    <div class="quarters-grid">
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q1 2020</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: May 2020</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$359M</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.18</div></div>
+          <div class="q-metric"><div class="m-label">Est. EPS</div><div class="m-value neu">~-$0.22</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value neg">-$49M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> The <strong>AK Steel acquisition closed March 13, 2020</strong> — the same week COVID-19 was declared a pandemic. Auto plants across North America shut down within days, vaporizing steel demand. Revenue jumped from prior year's ~$157M as AK Steel was now consolidated, but losses mounted from <strong>$66M in acquisition costs and inventory step-up charges</strong>. Despite the chaos, CLF <em>beat</em> the lowered analyst estimates, as iron ore operations remained solid. CEO Lourenco Goncalves signaled confidence in the transformation thesis.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q2 2020</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: July 2020</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$1.1B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.31</div></div>
+          <div class="q-metric"><div class="m-label">Est. EPS</div><div class="m-value neu">~-$0.37</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value neg">-$108M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> First full quarter with AK Steel contributed $1.1B in revenue (vs $743M prior year Q2 for legacy CLF). Despite this, it was the <strong>worst COVID quarter</strong> — steel mills ran at severely reduced capacity, automotive shipments were near zero in April–May, and spot steel prices fell to multi-year lows (~$480/ton HRC). The $108M net loss was still a <em>beat vs. the deeply pessimistic consensus</em> estimate. The company drew on its credit facility to preserve liquidity and began negotiations to acquire ArcelorMittal USA.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q3 2020</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: October 2020</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$1.6B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.02</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value">~$90M</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value neu">~$2M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> A strong recovery quarter. Auto plants fully reopened by June, driving a surge in steel demand. HRC prices started climbing from ~$500 to ~$650/ton during the quarter. AK Steel integration was ahead of schedule with significant synergies identified. Revenue grew $500M sequentially. <strong>Near breakeven EPS was a major positive surprise</strong>. CLF also announced its intent to acquire ArcelorMittal USA for ~$1.4B cash + liabilities, a deal that would more than triple the company's size.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q4 2020</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: February 2021</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$2.3B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value pos">~+$0.18</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value">~$340M</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value pos">~$80M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> <strong>ArcelorMittal USA acquisition closed December 9, 2020</strong> — giving CLF only ~22 days of contribution this quarter. Yet revenue jumped 43% sequentially. HRC steel prices were surging from ~$700 to ~$1,000/ton as pent-up demand, infrastructure spending, and supply constraints collided. CEO Goncalves called it a "particularly high note" ending. CLF was now overnight the <strong>largest flat-rolled steel producer in North America</strong>, with ~17 million tons of annual capacity. The stage was set for the steel supercycle of 2021.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2021 -->
+  <div class="year-section">
+    <div class="year-title">2021 <span class="year-summary">— Steel Supercycle · Revenue: $20.4B · EPS: $5.36 · Net Income: $3.0B · Best Year Ever</span></div>
+    <div class="quarters-grid">
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q1 2021</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: April 2021</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">~$4.0B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value pos">$0.07</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value">~$450M</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value pos">$41M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> First full quarter as a combined entity (AK Steel + AM USA). Revenue exploded to ~$4B. While EPS was modest at $0.07, it was a clear beat as steel prices were still ramping up (HRC ~$1,100–1,400/ton). CLF <strong>raised its full-year 2021 Adj. EBITDA guidance to $4 billion</strong> — an unprecedented figure for the company. The automotive sector was recovering strongly, and CLF's direct contracts with automakers provided pricing leverage. Integration synergies were being captured faster than planned.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q2 2021</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: July 2021</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">~$5.0B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value pos">$1.33</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value pos">~$1.2B</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value pos">$795M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> Massive acceleration. HRC prices hit ~$1,500/ton — more than double 2020 averages. CLF benefited enormously from its automotive fixed-price contracts which were now resetting at dramatically higher prices. <strong>CLF reported "Record Second-Quarter Results."</strong> Net income of $795M in a single quarter exceeded some analysts' full-year estimates. The company accelerated debt paydown aggressively. The Zacks estimate at the time was ~$1.10 EPS; CLF delivered $1.33 — a meaningful beat driven by pricing power.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q3 2021</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: October 2021</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value pos">~$6.0B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value pos">$2.33</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value pos">~$1.8B</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value pos">$1.3B</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> The single greatest quarter in Cleveland-Cliffs history. HRC steel prices peaked at <strong>~$1,950/ton in September 2021</strong> — nearly 3x the 2020 average. <strong>"Record Third-Quarter Results"</strong> — net income of $1.3B in one quarter. CLF's vertically integrated model (iron ore → pellets → DRI → steel) maximized margin capture. The semiconductor chip shortage was actually creating a silver lining: auto OEMs had lean inventories but committed high forward purchase volumes at peak prices, padding CLF's order book. Adj. EBITDA was ~$1.8B — in a single quarter.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q4 2021</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: February 2022</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value pos">~$5.4B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value pos">$1.69</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value pos">~$1.4B</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value pos">$899M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> Still an exceptional quarter despite steel prices beginning to moderate from the Q3 peak (~$1,400–1,600/ton). Net income of $899M and EPS of $1.69 delivered another beat. CLF announced a <strong>$1 billion share repurchase program</strong>, signaling balance sheet strength. Full-year 2021 net income of $3.0B was extraordinary for a company that lost money in 2020. Adjusted EBITDA for 2021 reached $5.3B — roughly 10x its 2020 level. <strong>Long-term debt was being paid down rapidly.</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2022 -->
+  <div class="year-section">
+    <div class="year-title">2022 <span class="year-summary">— Record Revenue, Declining Margins · Revenue: $23.0B · EPS: $2.55 · Adj. EBITDA: $3.2B</span></div>
+    <div class="quarters-grid">
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q1 2022</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: April 2022</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value pos">$6.0B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value pos">$1.50</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value pos">~$1.2B</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value pos">$801M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> Russia's invasion of Ukraine (February 24, 2022) initially <strong>boosted steel prices</strong> as markets feared supply disruptions from the major steel-producing region. HRC was at ~$1,400–1,500/ton. CLF delivered $6.0B revenue and $801M net income — still exceptional results. The company benefited from fixed automotive contracts negotiated during the 2021 price peak. CLF accelerated share buybacks and debt repayment. Full-year guidance called for ~$1,300/ton average selling price.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q2 2022</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: July 2022</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value pos">$6.3B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value pos">$1.13</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value pos">~$1.0B</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value pos">$601M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> Record quarterly revenue of $6.3B but net income fell 25% from Q1 as <strong>steel prices started declining sharply</strong> — HRC dropped from ~$1,400 to ~$900/ton by June. Rising energy costs (natural gas, electricity) and labor costs compressed margins. Still a solid beat vs. estimates. CLF also began facing increased steel imports. The automotive contract pricing buffer continued to provide above-market average selling prices, protecting earnings better than pure spot-price players. Management warned of lower H2 prices.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q3 2022</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: October 2022</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$5.7B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">$0.29</div></div>
+          <div class="q-metric"><div class="m-label">EPS Est.</div><div class="m-value neu">~$0.45</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value neu">$165M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> A significant miss — EPS of $0.29 vs. $0.45 estimate (-35.6% surprise). HRC steel prices <strong>crashed from ~$900 to ~$650/ton</strong> during the quarter. Higher operating costs (energy, labor), lower volumes from planned maintenance outages, and falling selling prices all compressed margins simultaneously. CLF also took a one-time charge related to pension/OPEB obligations (though separately it announced a <strong>$1.8B pension liability reduction</strong> deal). This quarter marked the turn — analysts began reassessing the steel cycle's durability.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q4 2022</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: February 2023</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$5.0B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.41</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value neg">$123M</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value neg">-$204M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> A loss quarter to cap a strong year. HRC prices fell to <strong>~$620/ton</strong> — the lowest since the COVID lows of 2020. Higher fixed costs from the large integrated footprint became a liability in a weak pricing environment. CLF missed estimates. Despite this, full-year revenue hit a record $23.0B. The loss demonstrated how <strong>operating leverage cuts both ways</strong>: the same scale that produced $1.8B EBITDA in Q3 2021 was producing $123M in Q4 2022. Management emphasized the upcoming 2023 automotive contract re-pricing at higher rates as the path forward.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2023 -->
+  <div class="year-section">
+    <div class="year-title">2023 <span class="year-summary">— Navigating Softness · Revenue: $22.0B · EPS: $0.78 GAAP · Net Income: $450M</span></div>
+    <div class="quarters-grid">
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q1 2023</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: April 2023</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$5.3B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.11</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value neu">$243M</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value neg">-$42M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> A weak start to 2023 as <strong>HRC prices remained depressed at ~$700–800/ton</strong>. CLF's first-quarter results are typically seasonally weaker due to winter maintenance outages. Revenue was slightly above Q4 2022, but a GAAP net loss of $42M reflected continued margin pressure. However, EBITDA improved meaningfully from Q4 2022's $123M to $243M, suggesting the automotive contract re-pricing at higher rates for 2023 was providing a cushion. Management raised full-year guidance, signaling confidence in H2 recovery.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q2 2023</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: July 2023</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">~$5.9B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value pos">~$0.68</div></div>
+          <div class="q-metric"><div class="m-label">EPS Est.</div><div class="m-value neu">~$0.73</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value">~$780M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> A material improvement but a <em>slight miss</em> vs the $0.73 consensus. <strong>New 2023 automotive contracts</strong> took effect with significantly higher prices than 2022 levels (avg ~$115/ton higher), boosting revenues and margins. HRC spot prices ticked up to ~$900/ton. However, analysts had expected even stronger results given the contract re-pricing tailwind. Volumes were also slightly below expectations due to planned maintenance at certain facilities. EBITDA of ~$780M was the best since Q4 2021 — a very strong quarter despite the technical miss.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q3 2023</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: October 2023</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value pos">$5.6B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value pos">$0.52</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value pos">$614M</div></div>
+          <div class="q-metric"><div class="m-label">Net Income</div><div class="m-value pos">$275M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> A strong beat on <strong>record automotive shipments</strong>. CLF shipped more steel to automotive customers than any prior quarter — a direct result of its unique positioning as the leading auto-grade flat-rolled steel supplier. Despite the <strong>UAW strike beginning in mid-September</strong> (the "Stand Up Strike" affecting Ford, GM, Stellantis), CLF's diversified customer base across multiple OEMs limited the impact. Adj. EBITDA of $614M was a pleasant surprise. The 4.7% trailing 4-quarter earnings surprise average reflected CLF's tendency to beat automotive-driven quarters.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q4 2023</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: January 2024</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$5.1B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.31</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS</div><div class="m-value neu">-$0.05</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value neu">$279M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> The <strong>UAW strike's full impact</strong> was felt (strike ran Sept–Oct 2023, but production recovery took through Q4). Auto shipments fell sharply from Q3's record levels. HRC spot prices softened to ~$750/ton. The GAAP loss of $0.31/share included charges related to legacy pension obligations and working capital adjustments as automotive customers worked down elevated inventories. Adj. EBITDA of $279M was better than Q4 2022's $123M, showing year-over-year improvement, but fell well short of Q3 2023 momentum. Net debt ended the year at a manageable ~$2.9B.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2024 -->
+  <div class="year-section">
+    <div class="year-title">2024 <span class="year-summary">— Import Surge & Stelco Drag · Revenue: $19.2B · EPS: -$1.57 · Net Loss: $708M</span></div>
+    <div class="quarters-grid">
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q1 2024</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: April 2024</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$5.2B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.14</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS</div><div class="m-value neu">$0.18</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS Est.</div><div class="m-value neu">$0.22</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> CLF missed adj. EPS estimates of $0.22 by delivering $0.18. <strong>Steel import volumes surged</strong> in Q1 2024, with cheap steel from Southeast Asia, Turkey, and China undercutting domestic producers. HRC prices were weak at ~$700–750/ton despite strong automotive demand. CLF announced a <strong>new $1.5B share repurchase program</strong> alongside results, signaling management confidence. GAAP loss was driven by non-cash items. The miss raised concerns about the competitive environment heading into 2024, particularly with Biden administration Section 232 tariff exceptions still in effect.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q2 2024</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: July 2024</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$5.1B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neu">~$0.00</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS</div><div class="m-value neu">$0.11</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value neu">$323M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> Continued margin pressure as <strong>HRC prices declined further to ~$680/ton</strong>. Import competition remained severe. GAAP breakeven and adj. EPS of $0.11 both came in below consensus. The market was increasingly concerned about CLF's cost structure relative to mini-mill competitors (Nucor, Steel Dynamics) who benefit from lower scrap-based costs. CLF was also in negotiations to acquire <strong>Stelco Holdings</strong> (Canadian flat-rolled producer), which closed in Q4. EBITDA of $323M was below Q1's $414M, showing sequential deterioration.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q3 2024</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: November 2024</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$4.6B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.52</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS</div><div class="m-value neg">-$0.33</div></div>
+          <div class="q-metric"><div class="m-label">EPS Est.</div><div class="m-value neu">-$0.31</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> The worst quarter since COVID, missing estimates by $0.02. Revenue fell $500M sequentially as <strong>HRC prices hit ~$650–680/ton</strong> — near 4-year lows. Steel imports accounted for an increasingly large share of US consumption. Automotive volumes were softer than expected as OEM production schedules were reduced. CLF's blast furnace-based cost structure (higher fixed costs than EAF competitors) was a structural disadvantage in the low-price environment. The Stelco acquisition was pending, creating uncertainty. CLF began <strong>announcing facility idlings</strong> to reduce costs.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q4 2024</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: February 2025</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$4.3B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.92</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS</div><div class="m-value neg">-$0.68</div></div>
+          <div class="q-metric"><div class="m-label">EPS Est.</div><div class="m-value neu">-$0.66</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> A devastating quarter. <strong>Stelco acquisition closed November 2024</strong>, adding ~C$3.3B in consideration plus integration and restructuring costs. HRC prices remained depressed at ~$680/ton. CLF recorded substantial impairment and restructuring charges. The GAAP loss of $0.92/share was the worst quarterly result since 2020. CLF was <strong>idling additional blast furnaces</strong> to right-size capacity for the demand environment. Management guided to a difficult 2025 unless trade policy changes (tariffs) could level the playing field vs. imports. All 4 quarters of 2024 missed estimates.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2025 -->
+  <div class="year-section">
+    <div class="year-title">2025 <span class="year-summary">— Tariffs Help, Too Late for the Year · Revenue: $18.6B · EPS: -$2.91 · Adj. EBITDA: $37M</span></div>
+    <div class="quarters-grid">
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q1 2025</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: April 2025</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$4.6B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$1.00</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS</div><div class="m-value neg">-$0.92</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value neg">-$174M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> The single worst quarter in CLF's modern history — a <strong>negative Adj. EBITDA of -$174M</strong>, meaning the company couldn't even cover operating costs. <strong>Trump's 25% Section 232 steel tariffs were reinstated in March 2025</strong>, but the benefit wouldn't flow through until Q2. HRC prices were at near-decade lows (~$620–640/ton) in January–February before the tariff announcement. Stelco integration costs, additional facility idlings, and severance charges compounded the pain. CLF missed estimates by a wide margin (~-$0.32 adj. EPS surprise). This was the trough of the cycle.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q2 2025</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: July 2025</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$4.9B</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS</div><div class="m-value neg">-$0.50</div></div>
+          <div class="q-metric"><div class="m-label">EPS Est.</div><div class="m-value neu">-$0.63</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value pos">$97M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> A major positive inflection — CLF <strong>beat estimates by $0.13</strong> (actual -$0.50 vs est. -$0.63). The 25% Section 232 tariffs began taking effect in March–April, immediately reducing import competition. HRC prices jumped from ~$640 to ~$800–850/ton. While still loss-making, the sequential improvement from -$174M EBITDA to +$97M EBITDA demonstrated the tariff impact clearly. Revenue also improved. CLF accelerated asset sales and restructuring actions to fund debt repayment. The market reacted positively despite the loss — the direction of travel had shifted.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q3 2025</span>
+          <span class="badge miss">Miss</span>
+        </div>
+        <div class="q-date">Reported: October 2025</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$4.7B</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS</div><div class="m-value neg">-$0.51</div></div>
+          <div class="q-metric"><div class="m-label">EPS Est.</div><div class="m-value neu">-$0.45</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EBITDA</div><div class="m-value pos">$143M</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> A <em>miss</em> despite continued improvement. Adj. EBITDA grew 47% from Q2 to $143M, and the stock actually <strong>rallied despite the miss</strong> — markets focused on the improving EBITDA trend. The miss occurred because of higher-than-expected costs (ongoing Stelco integration, natural gas prices, labor). HRC prices were ~$850/ton but showed some volatility. Revenue fell slightly from Q2 as some facilities remained idled. CLF was executing asset sales — proceeds reduced net debt significantly. The "stock surge despite revenue miss" headline from the earnings transcript underscored market optimism about the tariff-driven recovery trajectory.
+        </div>
+      </div>
+      <div class="q-card">
+        <div class="q-card-header">
+          <span class="q-label">Q4 2025</span>
+          <span class="badge beat">Beat</span>
+        </div>
+        <div class="q-date">Reported: February 2026</div>
+        <div class="q-metrics">
+          <div class="q-metric"><div class="m-label">Revenue</div><div class="m-value">$4.3B</div></div>
+          <div class="q-metric"><div class="m-label">GAAP EPS</div><div class="m-value neg">-$0.44</div></div>
+          <div class="q-metric"><div class="m-label">Adj. EPS</div><div class="m-value neg">-$0.43</div></div>
+          <div class="q-metric"><div class="m-label">EPS Est.</div><div class="m-value neu">-$0.62</div></div>
+        </div>
+        <div class="q-narrative">
+          <strong>What happened:</strong> CLF <strong>beat estimates by $0.19</strong> — the strongest beat in years. Adj. EBITDA improved further as tariff benefits fully embedded. Net debt fell to approximately <strong>~$1.3B</strong> — dramatically lower than 2023's $2.9B — driven by asset sales (including iron ore and/or plate business divestitures). Revenue was flat with Q3 but the cost structure was cleaner. CLF ended 2025 with a full year Adj. EBITDA of just $37M — near-zero — but the quarterly trend was clearly improving. <strong>Management guided to a profitable 2026</strong> as the tariff environment remains in place, import volumes have fallen, and HRC prices are stabilizing around $800–900/ton.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ DEBT & HEALTH TAB -->
+<div class="tab-content" id="tab-debt">
+  <div class="section-header">Annual Debt & Financial Health Summary</div>
+  <div class="debt-grid">
+    <div class="debt-card">
+      <div class="year">2020</div>
+      <div class="metric"><span class="key">Long-Term Debt</span><span class="val neg">~$5.4B</span></div>
+      <div class="metric"><span class="key">Net Debt</span><span class="val neg">~$4.8B</span></div>
+      <div class="metric"><span class="key">Adj. EBITDA</span><span class="val">~$500M</span></div>
+      <div class="metric"><span class="key">Net Debt / EBITDA</span><span class="val neg">~9.6x</span></div>
+      <div class="metric"><span class="key">Key Driver</span><span class="val" style="color:var(--orange)">AK Steel + AM USA acqs.</span></div>
+    </div>
+    <div class="debt-card">
+      <div class="year">2021</div>
+      <div class="metric"><span class="key">Long-Term Debt</span><span class="val neg">~$4.1B</span></div>
+      <div class="metric"><span class="key">Net Debt</span><span class="val neg">~$3.1B</span></div>
+      <div class="metric"><span class="key">Adj. EBITDA</span><span class="val pos">$5.3B</span></div>
+      <div class="metric"><span class="key">Net Debt / EBITDA</span><span class="val pos">0.6x</span></div>
+      <div class="metric"><span class="key">Key Driver</span><span class="val" style="color:var(--green)">Rapid paydown from profits</span></div>
+    </div>
+    <div class="debt-card">
+      <div class="year">2022</div>
+      <div class="metric"><span class="key">Long-Term Debt</span><span class="val neg">~$3.5B</span></div>
+      <div class="metric"><span class="key">Net Debt</span><span class="val neg">~$3.0B</span></div>
+      <div class="metric"><span class="key">Adj. EBITDA</span><span class="val pos">$3.2B</span></div>
+      <div class="metric"><span class="key">Net Debt / EBITDA</span><span class="val pos">0.9x</span></div>
+      <div class="metric"><span class="key">Key Driver</span><span class="val" style="color:var(--green)">Buybacks + debt reduction</span></div>
+    </div>
+    <div class="debt-card">
+      <div class="year">2023</div>
+      <div class="metric"><span class="key">Long-Term Debt</span><span class="val neg">~$3.5B</span></div>
+      <div class="metric"><span class="key">Net Debt (YE)</span><span class="val neg">~$2.9B</span></div>
+      <div class="metric"><span class="key">Adj. EBITDA</span><span class="val">$1.9B</span></div>
+      <div class="metric"><span class="key">Net Debt / EBITDA</span><span class="val neu">1.5x</span></div>
+      <div class="metric"><span class="key">Key Driver</span><span class="val" style="color:var(--yellow)">Modest paydown, soft market</span></div>
+    </div>
+    <div class="debt-card">
+      <div class="year">2024</div>
+      <div class="metric"><span class="key">Long-Term Debt (Gross)</span><span class="val neg">~$6.5B</span></div>
+      <div class="metric"><span class="key">Net Debt (YE)</span><span class="val neg">~$2.4B</span></div>
+      <div class="metric"><span class="key">Adj. EBITDA</span><span class="val neg">$780M</span></div>
+      <div class="metric"><span class="key">Net Debt / EBITDA</span><span class="val neg">~3.1x</span></div>
+      <div class="metric"><span class="key">Key Driver</span><span class="val" style="color:var(--red)">Stelco acquisition added debt</span></div>
+    </div>
+    <div class="debt-card">
+      <div class="year">2025</div>
+      <div class="metric"><span class="key">Long-Term Debt (Gross)</span><span class="val neg">~$7.3B</span></div>
+      <div class="metric"><span class="key">Net Debt (YE)</span><span class="val pos">~$1.3B</span></div>
+      <div class="metric"><span class="key">Adj. EBITDA</span><span class="val neg">$37M</span></div>
+      <div class="metric"><span class="key">Net Debt / EBITDA</span><span class="val neg">~35x</span></div>
+      <div class="metric"><span class="key">Key Driver</span><span class="val" style="color:var(--purple)">Asset sales reduced net debt</span></div>
+    </div>
+  </div>
+
+  <div class="section-header">Key Financial Health Indicators</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>2020</th>
+          <th>2021</th>
+          <th>2022</th>
+          <th>2023</th>
+          <th>2024</th>
+          <th>2025</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Revenue</strong></td>
+          <td>$5.35B</td>
+          <td class="pos">$20.4B</td>
+          <td class="pos">$23.0B ★</td>
+          <td>$22.0B</td>
+          <td class="neg">$19.2B</td>
+          <td class="neg">$18.6B</td>
+        </tr>
+        <tr>
+          <td><strong>GAAP EPS</strong></td>
+          <td class="neg">-$0.32</td>
+          <td class="pos">$5.36 ★</td>
+          <td class="pos">$2.55</td>
+          <td class="pos">$0.78</td>
+          <td class="neg">-$1.57</td>
+          <td class="neg">-$2.91</td>
+        </tr>
+        <tr>
+          <td><strong>Adj. EBITDA</strong></td>
+          <td>~$500M</td>
+          <td class="pos">$5.3B ★</td>
+          <td class="pos">$3.2B</td>
+          <td>$1.9B</td>
+          <td class="neg">$780M</td>
+          <td class="neg">$37M</td>
+        </tr>
+        <tr>
+          <td><strong>EBITDA Margin</strong></td>
+          <td>9.3%</td>
+          <td class="pos">26.0% ★</td>
+          <td class="pos">13.9%</td>
+          <td>8.6%</td>
+          <td class="neg">4.1%</td>
+          <td class="neg">0.2%</td>
+        </tr>
+        <tr>
+          <td><strong>Net Debt</strong></td>
+          <td class="neg">~$4.8B</td>
+          <td class="neg">~$3.1B</td>
+          <td class="neg">~$3.0B</td>
+          <td class="neg">~$2.9B</td>
+          <td class="neg">~$2.4B</td>
+          <td class="pos">~$1.3B ↓</td>
+        </tr>
+        <tr>
+          <td><strong>HRC Steel Price (avg)</strong></td>
+          <td>~$620/t</td>
+          <td class="pos">~$1,450/t</td>
+          <td class="pos">~$1,100/t</td>
+          <td>~$800/t</td>
+          <td class="neg">~$680/t</td>
+          <td class="neg">~$720/t*</td>
+        </tr>
+        <tr>
+          <td><strong>Full Year Beat/Miss</strong></td>
+          <td class="pos">Mostly Beat</td>
+          <td class="pos">All Beat</td>
+          <td class="neg">Mixed (2 miss)</td>
+          <td class="neg">Mixed (2 miss)</td>
+          <td class="neg">All Miss</td>
+          <td class="neg">2 Beat / 2 Miss</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-top:8px">★ = Company record for that metric. HRC 2025* = estimated average before tariff recovery in H2.</div>
+
+  <div class="section-header">What Drives CLF's Performance</div>
+  <div class="cards-row" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">🏭 HRC Steel Prices</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">The single biggest driver. CLF's avg selling price tracks HRC steel with a lag (automotive contracts buffer short-term swings). Every ~$100/ton change in HRC = ~$1.2–1.5B impact on revenue annually given ~15M ton shipment volumes.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">🚗 Automotive Contracts</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">~50–60% of CLF's shipments are to automotive OEMs (Ford, GM, Stellantis, etc.) under annual fixed-price contracts. This creates a 1-year lag vs. spot prices — great in a down market, a drag in a rapid rise. Record auto shipments in Q3 2023 demonstrated this anchor.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">🌍 Steel Imports</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Import competition (especially from Asia, Turkey, and MENA) is the primary threat to domestic steel pricing. Section 232 tariffs under Trump (25%) were the most effective protection. Biden's tariff relaxations contributed to the 2024 pricing collapse.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">⚡ Operating Leverage</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">CLF's blast furnace + integrated model has very high fixed costs (~$650–700/ton). When HRC is $1,500/ton, margins are extraordinary. When HRC is $650/ton, the company loses money. This is why EBITDA went from $5.3B (2021) to $37M (2025) on only a 9% revenue decline from peak.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">🔄 Acquisitions & Debt</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Each major acquisition (AK Steel, AM USA, Stelco) added scale but also debt and integration costs. The 2021 steel supercycle came at the perfect time — profits funded rapid deleveraging. The 2024 Stelco acquisition at $2.4B USD came at a market trough, adding debt stress in an already difficult environment.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">🛡️ Trade Policy</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">CLF's profitability is highly correlated with US trade policy. Trump's Section 232 tariffs (first imposed 2018, re-expanded March 2025) created the conditions for the 2021 supercycle and the 2025 recovery. Biden's tariff exceptions allowed the 2024 import surge that drove losses.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ FUTURE OUTLOOK TAB -->
+<div class="tab-content" id="tab-future">
+
+  <div class="overview-summary">
+    <p>CLF enters 2026 at an <strong>inflection point</strong>. The 2025 cycle trough appears to be behind them — Q4 2025 beat estimates, net debt has been cut to ~$1.3B, and Section 232 tariffs are intact. But structural headwinds from EAF competition, the EV transition, and a high fixed-cost base mean the road to sustained profitability is not guaranteed. Below is an honest assessment of both sides.</p>
+  </div>
+
+  <!-- SCENARIO CARDS -->
+  <div class="section-header">2026–2027 Scenarios</div>
+  <div class="cards-row" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">
+    <div class="card" style="border-color:var(--green)">
+      <div class="card-label" style="color:var(--green)">🟢 Bull Case — Tariff-Driven Recovery</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin:10px 0 6px">EPS Target: $1.50–$2.50</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7">25% Section 232 tariffs remain in place, suppressing imports. HRC prices recover to $900–$1,000/ton. Stelco integration delivers synergies. 2026 automotive contracts re-priced upward. Net debt continues falling. EBITDA could recover to $2.0–2.5B — approaching 2022 levels. The operating leverage that crushed CLF on the way down becomes a powerful tailwind.</div>
+    </div>
+    <div class="card" style="border-color:var(--yellow)">
+      <div class="card-label" style="color:var(--yellow)">🟡 Base Case — Gradual Stabilization</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin:10px 0 6px">EPS Target: $0.00–$1.00</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7">HRC stabilizes around $800–$850/ton. Tariffs hold but don't dramatically boost pricing further. CLF returns to narrow profitability as cost cuts and Stelco synergies offset a soft demand backdrop. EBITDA recovers to $1.0–1.5B. Beat-or-miss quarters are roughly split. Debt paydown continues at a slower pace. A modest recovery — not a supercycle.</div>
+    </div>
+    <div class="card" style="border-color:var(--red)">
+      <div class="card-label" style="color:var(--red)">🔴 Bear Case — Policy Reversal or Recession</div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin:10px 0 6px">EPS Target: -$1.00 to -$2.00</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.7">A US–trade-partner deal relaxes Section 232 tariffs, imports flood back in. Or a US recession softens auto production and construction. HRC falls back below $700/ton. CLF returns to loss-making territory. The ~$7.3B gross debt load becomes a serious liquidity concern without EBITDA to service it. Potential for asset sales, equity dilution, or covenant pressures.</div>
+    </div>
+  </div>
+
+  <!-- BULL / BEAR DETAIL -->
+  <div class="section-header">The Bull Case in Detail</div>
+  <div class="cards-row" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+    <div class="card">
+      <div class="card-label" style="color:var(--green)">🛡️ Section 232 Tariffs Holding</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">The 25% steel tariffs reinstated in March 2025 are the single most important near-term driver. They immediately cut import competitiveness and triggered the H2 2025 EBITDA recovery from -$174M to +$80M in two quarters. If they remain — as politically expected under the current administration — CLF has a structural pricing floor it lacked in 2024.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--green)">⚡ Operating Leverage, Upward</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">CLF's blast furnace model has massive fixed costs — but those are already being paid. Every incremental dollar of HRC price improvement above their breakeven (~$750–780/ton) flows almost entirely to the bottom line. A $100/ton HRC improvement from $800 to $900/ton could add ~$1.2–1.5B in annual EBITDA on roughly flat volumes. That's the math that made 2021 extraordinary.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--green)">🏗️ Infrastructure & Reshoring Demand</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">The Infrastructure Investment and Jobs Act (IIJA) and CHIPS Act continue to generate multi-year demand for domestic steel — bridges, highways, semiconductor fabs, data centers. CLF is a direct beneficiary as the largest domestic flat-rolled and specialty steel producer. This provides a structural demand floor independent of auto cycles.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--green)">🔧 Stelco Synergies Coming</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">The Stelco acquisition was painful in 2024–2025 (acquisition costs, integration charges, bad timing). But Stelco's Hamiltion, Ontario and Lake Erie Works facilities give CLF Canadian production scale, CUSMA-advantaged trade flows, and ~2.2M additional tons of capacity. Synergy realization in 2026 could add $200–400M to annual EBITDA once integration noise clears.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--green)">💰 Debt Reduction Momentum</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Net debt fell from ~$2.4B (end 2024) to ~$1.3B (end 2025) — a $1.1B reduction in one year, driven by asset sales. A recovering EBITDA profile in 2026 ($1.0–2.0B) would bring the net leverage ratio below 1.5x, a manageable level that removes the balance sheet risk overhang and could support resumed share buybacks.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--green)">🚗 Automotive Resilience</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Despite EV headwinds, CLF's automotive customers (Ford, GM, Stellantis, Toyota, Honda) are still producing ~15–16M vehicles per year in North America. CLF supplies advanced high-strength steel grades that EVs actually need more of (structural battery enclosures, body-in-white lightweighting). The mix shift from ICE to EV is a gradual transition — not a cliff.</div>
+    </div>
+  </div>
+
+  <!-- BEAR / RISKS -->
+  <div class="section-header">The Bear Case & Key Risks</div>
+  <div class="cards-row" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">
+    <div class="card">
+      <div class="card-label" style="color:var(--red)">⚠️ EAF Competition — Structural, Not Cyclical</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Nucor, Steel Dynamics, and NLMK USA are all expanding EAF capacity specifically targeting flat-rolled and automotive-grade steel — CLF's core market. EAF mills have ~$150–200/ton cost advantage over blast furnaces, can flex capacity up/down faster, and produce lower-carbon steel (increasingly valued by OEMs). This competitive pressure will not go away regardless of tariffs.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--red)">🚗 EV Transition Risk</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">EVs use ~200 lbs less steel per vehicle than ICE cars (no engine block, transmission, complex stampings). By 2030, if EVs reach 30–40% of new US auto sales, total automotive steel demand could decline 10–15%. CLF's heavy auto exposure (~55% of shipments) is a structural risk. Aluminum substitution in body panels is an additional long-term headwind.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--red)">📜 Trade Policy Single-Point Risk</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">CLF's 2026 profitability hinges significantly on tariffs remaining in place. Any trade negotiation that relaxes Section 232 steel tariffs — even partially, as the Biden administration did with EU, UK, and Japan "TRQ" arrangements — could re-open the import flood. CLF has essentially no control over this. A single executive order could swing annual EBITDA by $1B+.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--red)">💸 Gross Debt Load</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">While net debt has been reduced by asset sales, CLF's gross long-term debt remains ~$7.3B. Interest expense alone is ~$400–500M/year. In a scenario where EBITDA stays below $1B, interest coverage becomes thin and covenant pressure could force dilutive equity raises or additional asset sales at unfavorable prices. The balance sheet is cleaner but not clean.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--red)">🌍 China Overcapacity Overhang</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">China produces ~1 billion tons of steel per year against domestic demand of ~800M tons — a chronic 200M ton surplus that gets exported globally. Even with US tariffs, this surplus depresses global HRC benchmarks and puts constant downward pressure on US prices through indirect routes (e.g., steel pipes, components, transshipment through third countries). There is no near-term resolution to Chinese overcapacity.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--red)">🔬 Carbon Transition Costs</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Blast furnaces emit ~2 tons of CO₂ per ton of steel. CLF has announced plans to incorporate hydrogen-based direct reduced iron (DRI) technology at its Toledo facility — which could dramatically reduce emissions but requires billions in capex. As carbon border adjustment mechanisms (like the EU CBAM) spread globally, CLF's carbon-intensive production model could face pricing penalties in export markets.</div>
+    </div>
+  </div>
+
+  <!-- KEY METRICS TO WATCH -->
+  <div class="section-header">Key Metrics to Watch in 2026</div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Indicator</th>
+          <th>Bear Signal</th>
+          <th>Neutral Zone</th>
+          <th>Bull Signal</th>
+          <th>Why It Matters</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>HRC Spot Price</strong></td>
+          <td class="neg">&lt; $700/ton</td>
+          <td class="neu">$750–$850/ton</td>
+          <td class="pos">&gt; $900/ton</td>
+          <td>Every $100/ton = ~$1.2–1.5B annual revenue impact</td>
+        </tr>
+        <tr>
+          <td><strong>Section 232 Tariff Status</strong></td>
+          <td class="neg">Relaxed / Exemptions</td>
+          <td class="neu">Held at 25%</td>
+          <td class="pos">Expanded scope</td>
+          <td>Single biggest policy lever on import competition</td>
+        </tr>
+        <tr>
+          <td><strong>US Auto Production (SAAR)</strong></td>
+          <td class="neg">&lt; 14M units/yr</td>
+          <td class="neu">14–16M units/yr</td>
+          <td class="pos">&gt; 16M units/yr</td>
+          <td>~55% of CLF's shipments are to auto OEMs</td>
+        </tr>
+        <tr>
+          <td><strong>Adj. EBITDA / Quarter</strong></td>
+          <td class="neg">&lt; $200M</td>
+          <td class="neu">$200–$500M</td>
+          <td class="pos">&gt; $500M</td>
+          <td>Quarterly trend reveals if recovery is real and sustained</td>
+        </tr>
+        <tr>
+          <td><strong>Net Debt</strong></td>
+          <td class="neg">&gt; $2.0B rising</td>
+          <td class="neu">$1.0–2.0B stable</td>
+          <td class="pos">&lt; $1.0B falling</td>
+          <td>Balance sheet health; path to buybacks / investment</td>
+        </tr>
+        <tr>
+          <td><strong>Automotive Contract Pricing</strong></td>
+          <td class="neg">Flat or lower YoY</td>
+          <td class="neu">+2–5% YoY</td>
+          <td class="pos">+8%+ YoY</td>
+          <td>2026 contracts set in late 2025 — locks in revenue floor</td>
+        </tr>
+        <tr>
+          <td><strong>Steel Import Volume</strong></td>
+          <td class="neg">Rising above 25M tons/yr</td>
+          <td class="neu">20–25M tons/yr</td>
+          <td class="pos">&lt; 20M tons/yr</td>
+          <td>Leading indicator of domestic pricing pressure</td>
+        </tr>
+        <tr>
+          <td><strong>EAF Capacity Additions</strong></td>
+          <td class="neg">Nucor/SDI entering auto-grade at scale</td>
+          <td class="neu">Incremental gains</td>
+          <td class="pos">Delayed / limited by permitting</td>
+          <td>Long-term competitive threat to CLF's core market</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- SUMMARY VERDICT -->
+  <div class="section-header">The Bottom Line</div>
+  <div class="overview-summary" style="border-color:var(--accent)">
+    <p style="margin-bottom:12px">CLF is a <strong>high-beta, cyclical stock</strong> that rewards investors who correctly call the steel cycle and penalizes those who are wrong. The tariff environment gives it a better-than-even shot at a meaningful 2026 recovery — a partial return toward 2022–2023 profitability is the most likely scenario if HRC prices stay above $800/ton.</p>
+    <p style="margin-bottom:12px">The medium-term structural story is more challenging. The <strong>EAF competitive encroachment into automotive-grade steel</strong> and the <strong>gradual EV transition</strong> are secular headwinds that no amount of tariffs can permanently offset. CLF will need to either invest heavily in lower-carbon, lower-cost production (DRI-EAF hybrid strategy) or continue consolidating to achieve the scale needed to survive margin compression.</p>
+    <p>The <strong>single most important variable to watch</strong> is HRC steel pricing. If it stays above $850/ton with tariffs intact, the operating leverage math produces a profitable 2026. If HRC drifts back below $700/ton for any reason — trade deal, recession, import surge — the losses from 2024–2025 could return quickly. CLF's future is, as it has always been, a bet on steel.</p>
+  </div>
+
+</div>
+
+<!-- ============================================================ MIDDLETOWN WORKS TAB -->
+<div class="tab-content" id="tab-middletown">
+
+  <!-- HERO BANNER -->
+  <div class="overview-summary" style="border-color:var(--orange);background:linear-gradient(135deg,rgba(255,166,87,0.07) 0%,var(--surface) 100%)">
+    <p style="font-size:16px;font-weight:700;color:var(--orange);margin-bottom:8px">Middletown Works — CLF's Flagship Steelmaking Facility</p>
+    <p>Located in <strong>Middletown, Ohio</strong>, this plant has produced steel continuously since <strong>1899</strong> — first as ARMCO, then AK Steel, and now Cleveland-Cliffs. It is CLF's single largest and most strategically important production site, capable of <strong>~3 million tons of steel per year</strong> and serving as the heart of its automotive flat-rolled franchise. In 2025, a planned $1.3B green steel transformation was cancelled — leaving its long-term future in flux but its blast furnace operations ongoing.</p>
+  </div>
+
+  <!-- KEY STATS -->
+  <div class="section-header">Facility At a Glance</div>
+  <div class="cards-row" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">
+    <div class="card">
+      <div class="card-label">Founded</div>
+      <div class="card-value" style="font-size:22px">1899</div>
+      <div class="card-sub">As American Rolling Mill Co. (ARMCO)</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Location</div>
+      <div class="card-value" style="font-size:18px">Middletown, OH</div>
+      <div class="card-sub">Butler County, southwest Ohio</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Annual Capacity</div>
+      <div class="card-value pos" style="font-size:22px">~3M tons</div>
+      <div class="card-sub">Raw steel per year</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Employees</div>
+      <div class="card-value" style="font-size:22px">~2,500</div>
+      <div class="card-sub">Unionized (IAM represented)</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Acquired by CLF</div>
+      <div class="card-value" style="font-size:18px">March 13, 2020</div>
+      <div class="card-sub">Part of $1.1B AK Steel deal</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Primary Market</div>
+      <div class="card-value" style="font-size:18px">Automotive</div>
+      <div class="card-sub">High-strength flat-rolled steel</div>
+    </div>
+  </div>
+
+  <!-- HISTORY TIMELINE -->
+  <div class="section-header">History Timeline</div>
+  <div style="position:relative;padding-left:28px;border-left:2px solid var(--border);margin-bottom:24px">
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--orange);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--orange)">1899 — The American Rolling Mill Company (ARMCO) Founded</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">George Matthew Verity co-founded ARMCO in Middletown, Ohio. The company's original mission was to produce a better quality, more consistent low-carbon steel for the emerging sheet metal industry. Middletown was chosen for its location on the Great Miami River with rail access and proximity to raw materials. Within a decade, ARMCO found its defining niche: supplying steel for the booming US automobile industry.</div>
+    </div>
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--accent)">1910 — East Works Constructed</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">After a decade of rapid growth, a much larger integrated steel complex was built in southeastern Middletown at the end of South Crawford Street. Dubbed "East Works," this facility became the core of Middletown's steelmaking for generations. By the 1920s, ARMCO was pioneering the use of steel in automobile bodies, becoming a foundational supplier to Detroit.</div>
+    </div>
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--accent)">1948 — Renamed Armco Steel Corporation</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">The company officially adopted the ARMCO acronym as its full name and expanded aggressively through the postwar manufacturing boom. Middletown Works underwent the "Project 600" expansion in the mid-1960s — estimated at $600M but ultimately costing nearly $1B — adding major blast furnace and rolling mill capacity to serve growing auto and appliance demand.</div>
+    </div>
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--yellow);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--yellow)">1989–1993 — Armco Merges with Kawasaki → Becomes AK Steel</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">Armco merged with Japan's Kawasaki Steel in 1989, and in 1993 the company renamed itself AK Steel Holdings (from <strong>A</strong>rmco + <strong>K</strong>awasaki). Headquarters moved from Middletown to Pittsburgh. The merger brought Japanese steelmaking technology and capital but also triggered workforce reductions that strained Middletown's economy — a dynamic chronicled in J.D. Vance's memoir <em>Hillbilly Elegy</em>, which drew on his family's ties to the plant.</div>
+    </div>
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--yellow);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--yellow)">1990s–2019 — AK Steel Era: Specialization in Automotive Grades</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">Under AK Steel, Middletown Works specialized in advanced high-strength steel (AHSS) and ultra-high-strength steel (UHSS) for automotive applications — grades like NEXMET®, ULTRALUME®, and proprietary electrical steels. By 2018, ~63% of AK Steel's total revenue came from automotive customers. Middletown was the hub of this franchise, producing hot-rolled, cold-rolled, galvanized, and other coated automotive-grade products. Periodic downturns, labor disputes, and import pressure made the years between 2000–2020 volatile for the facility.</div>
+    </div>
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--green);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--green)">March 13, 2020 — Cleveland-Cliffs Acquires AK Steel for ~$1.1B</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">CLF CEO Lourenco Goncalves immediately declared Middletown Works the <strong>"crown jewel"</strong> of the AK Steel portfolio. The acquisition closed the same week COVID-19 was declared a pandemic — challenging timing, but CLF held firm on integrating the facility. Middletown's 3M-ton blast furnace capacity and automotive customer relationships gave CLF the steel-producing backbone it needed to compete at scale. Combined with CLF's iron ore pellets from its Minnesota mines, full vertical integration was achieved for the first time.</div>
+    </div>
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--green);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--green)">2021–2022 — Supercycle: Middletown Running at Full Capacity</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">During the steel supercycle of 2021–2022, Middletown Works operated at or near full capacity. HRC prices near $1,900/ton meant massive margin per ton produced. The facility's hot strip mill — equipped with pair-cross rolling technology for superior shape and crown control — was running around the clock to fill automotive order books. This period validated CLF's acquisition thesis and funded rapid debt paydown at the corporate level.</div>
+    </div>
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--purple);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--purple)">2023 — Hydrogen Injection Trial + Green Steel Announcement</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">CLF completed a <strong>successful hydrogen injection trial</strong> at the Middletown blast furnace — injecting hydrogen as a partial replacement for natural gas in the tuyeres, reducing CO₂ emissions per ton. Building on this, CLF announced an ambitious $1.3B+ transformation: replacing the existing blast furnace with a <strong>2.5 mtpa hydrogen-ready Direct Reduced Iron (DRI) plant</strong> and two <strong>120-MW Electric Melting Furnaces (EMFs)</strong>. The plan promised to cut CO₂ emissions by 50–90% while maintaining 3M ton annual output and adding 170 permanent and 1,200 construction jobs.</div>
+    </div>
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--purple);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--purple)">March 2024 — DOE Selects Middletown for $527M Grant</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">The U.S. Department of Energy selected the Middletown Works project for award negotiations — offering up to <strong>$527 million</strong> from the Bipartisan Infrastructure Law to fund the DRI/EMF conversion. This was one of the largest single DOE industrial decarbonization grants ever. Combined with CLF's own investment, total project cost exceeded $1.3B. Local officials, unions, and environmental groups broadly supported the plan, seeing it as a once-in-a-generation opportunity to modernize the mill and secure jobs for decades.</div>
+    </div>
+
+    <div style="margin-bottom:22px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--red);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--red)">July 2025 — Project Cancelled. Grant Returned.</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">CLF informed the DOE it <strong>would not be pursuing the green steel project</strong> and forfeited the $527M grant. CEO Goncalves cited two key obstacles: (1) the <strong>unavailability of affordable low-carbon hydrogen</strong> at the scale required (~300,000 tons/year) — without it, a "hydrogen-ready" DRI plant would just be an expensive natural gas DRI plant with limited emissions benefit; and (2) the Trump administration had placed the DOE grant on a <strong>list of awards slated for termination</strong>, making the federal funding unreliable. The cancellation devastated local construction unions who had expected 1,200 jobs during the build phase.</div>
+    </div>
+
+    <div style="margin-bottom:4px;position:relative">
+      <div style="position:absolute;left:-35px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)"></div>
+      <div style="font-size:13px;font-weight:700;color:var(--accent)">2026 — Blast Furnace Continues. Future Under Review.</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.7">CEO Goncalves announced CLF is in conversations with the DOE to <strong>"revamp" the project concept</strong> — pivoting away from hydrogen toward a model centered on what he called <em>"beautiful coal, beautiful coke, beautiful natural gas, our American iron ore from Minnesota."</em> This signals a potential modernization of the existing blast furnace rather than a green technology replacement. Middletown Works remains CLF's flagship facility, its blast furnace operational, its ~2,500-person workforce intact, and its role as the automotive steel hub of the CLF system unchanged — for now.</div>
+    </div>
+
+  </div>
+
+  <!-- OPERATIONS -->
+  <div class="section-header">What the Plant Produces</div>
+  <div class="cards-row" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">🔥 Ironmaking (Blast Furnace)</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">The blast furnace converts CLF's own iron ore pellets (mined in Minnesota) into molten pig iron using coke and natural gas. This is the foundation of the integrated steelmaking process — and the facility's highest CO₂-emitting step (~2 tons CO₂ per ton of iron). The BF feeds directly into the BOF.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">⚗️ Steelmaking (Basic Oxygen Furnace)</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Molten pig iron from the BF is combined with scrap steel in the BOF, where pure oxygen is blown in to burn off excess carbon and impurities. The result is molten steel with precisely controlled chemistry — critical for the exacting specifications of automotive-grade products. Multiple heats per day feed the caster.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">🪨 Continuous Casting</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Molten steel is continuously cast into slabs — thick, flat rectangular billets typically 8–10 inches thick and up to 60 inches wide. These slabs are the feedstock for the hot strip mill. Consistent slab quality is essential for downstream rolling uniformity.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">🔁 Hot Strip Mill</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Hot slabs are reheated and rolled down to thin coils of hot-rolled steel — gauges from ~1.5mm to 12mm. Middletown's hot strip mill uses <strong>pair-cross rolling technology</strong> for improved shape and crown control, producing flatter, more consistent coils than older mills. Hot-rolled coil is either sold directly or sent to cold rolling and finishing.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">❄️ Cold Rolling & Finishing</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Cold rolling further reduces thickness and improves surface finish and mechanical properties. Finishing lines apply coatings — galvanizing (zinc), aluminizing, or organic coatings — for corrosion protection. The finished products include exposed automotive body panels, structural members, door inners/outers, and underbody stampings destined for Ford, GM, Stellantis, Toyota, and Honda assembly plants.</div>
+    </div>
+    <div class="card">
+      <div class="card-label" style="color:var(--accent)">🚗 Product Mix: Advanced Automotive Grades</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Middletown produces the most demanding steel grades: <strong>Advanced High-Strength Steel (AHSS)</strong>, <strong>Ultra-High-Strength Steel (UHSS)</strong>, dual-phase grades, press-hardening steels, and exposed-quality grades for Class A surface applications. These products command premium pricing and require metallurgical expertise that EAF mini-mills are still working to replicate at scale.</div>
+    </div>
+  </div>
+
+  <!-- DOE PROJECT DEEP DIVE -->
+  <div class="section-header">The $1.3B Green Steel Project — Rise & Fall</div>
+  <div class="table-wrap" style="margin-bottom:24px">
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Event</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>2023</td><td>CLF announces DRI + Electric Melting Furnace transformation plan for Middletown Works</td><td><span class="badge beat">Announced</span></td></tr>
+        <tr><td>2023</td><td>Successful hydrogen injection trial at Middletown blast furnace completed</td><td><span class="badge beat">Completed</span></td></tr>
+        <tr><td>March 2024</td><td>DOE selects Middletown Works for up to <strong>$527M</strong> award under Bipartisan Infrastructure Law</td><td><span class="badge beat">Selected</span></td></tr>
+        <tr><td>2024</td><td>CLF reaffirms commitment to project; construction planning underway</td><td><span class="badge beat">Active</span></td></tr>
+        <tr><td>Jan 2025</td><td>Trump administration places DOE industrial grants on termination review list</td><td><span class="badge miss">At Risk</span></td></tr>
+        <tr><td>July 2025</td><td>CLF formally cancels project; DOE grant forfeited. ~1,200 expected construction jobs lost.</td><td><span class="badge miss">Cancelled</span></td></tr>
+        <tr><td>Early 2026</td><td>CLF in talks with DOE to "revamp" project using conventional BF + fossil fuel modernization</td><td><span class="badge" style="background:rgba(88,166,255,0.15);color:var(--accent);border:1px solid rgba(88,166,255,0.3)">Under Review</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cards-row" style="grid-template-columns:repeat(auto-fill,minmax(280px,1fr))">
+    <div class="card" style="border-color:var(--purple)">
+      <div class="card-label" style="color:var(--purple)">What the Plan Would Have Done</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">Replaced the existing blast furnace with a <strong>2.5 mtpa hydrogen-ready DRI plant</strong> (Direct Reduced Iron — using hydrogen or natural gas to reduce iron ore pellets into sponge iron without a blast furnace) feeding <strong>two 120-MW Electric Melting Furnaces</strong>. The existing BOF, caster, hot strip mill, and finishing lines would have been retained. CO₂ emissions cut by 50–90%. Total investment: $1.3B+. DOE contribution: $527M. CLF contribution: ~$800M+.</div>
+    </div>
+    <div class="card" style="border-color:var(--red)">
+      <div class="card-label" style="color:var(--red)">Why It Was Cancelled</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7"><strong>1. No affordable hydrogen:</strong> Green hydrogen at scale remains expensive (~$3–5/kg vs. target of $1/kg). Without cheap H₂, the DRI plant would run on natural gas — cutting some emissions but not the 50–90% promised, undermining the entire premise. <strong>2. Federal policy shift:</strong> The Trump administration's hostility to IRA/BIL-funded green energy projects put the $527M grant on a termination list, creating financing uncertainty CLF couldn't plan around. <strong>3. Financial stress:</strong> CLF was losing money in 2024–2025 — spending $800M+ on a capital project was untenable.</div>
+    </div>
+    <div class="card" style="border-color:var(--yellow)">
+      <div class="card-label" style="color:var(--yellow)">What It Means for CLF's Future</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7">The cancellation means Middletown Works will continue operating as a blast furnace facility for the foreseeable future — likely well into the 2030s. CLF's carbon footprint remains high relative to EAF competitors. The company cannot claim "green steel" credentials that some automotive OEMs are beginning to require from suppliers by 2030. CLF's competitive moat remains product quality and scale — not sustainability positioning. The blast furnace modernization talks with DOE could bring incremental improvements but no step-change in emissions.</div>
+    </div>
+  </div>
+
+  <!-- SIGNIFICANCE TO CLF FINANCIALS -->
+  <div class="section-header">Middletown's Role in CLF's Financial Story</div>
+  <div class="overview-summary">
+    <p style="margin-bottom:10px">Middletown Works is not just one plant among many — it is arguably <strong>the single most important asset in CLF's portfolio</strong>. At ~3 million tons annual capacity, it accounts for roughly <strong>18–20% of CLF's total steelmaking output</strong>. Its automotive-grade product mix commands the highest selling prices across CLF's portfolio — typically $100–200/ton above commodity HRC — and its long-term supply agreements with the Big Three automakers provide the revenue floor that stabilizes CLF's earnings even in weak steel markets.</p>
+    <p style="margin-bottom:10px">The facility was central to the <strong>2021 supercycle earnings</strong>: running at full capacity with HRC prices near $1,900/ton, Middletown's operating leverage was extraordinary. Conversely, when steel prices fell and volumes dropped in 2024, idling blast furnaces at Middletown contributed directly to the quarterly losses.</p>
+    <p>Looking ahead, Middletown's fate is intertwined with two questions: <strong>(1) Can CLF maintain its automotive steel pricing premium</strong> as EAF mills like Nucor and SDI expand their automotive capabilities? And <strong>(2) Will CLF eventually be forced to invest in lower-carbon production</strong> to retain OEM customers who are setting aggressive Scope 3 emissions reduction targets? The cancelled green steel project was the answer to question two — its cancellation leaves that question unanswered.</p>
+  </div>
+
+</div>
+
+<script>
+// ======== DATA ========
+const quarterlyData = [
+  // 2020
+  { period:'Q1 2020', year:'2020', date:'May 2020',    rev:'$359M',   gaapEps:'-0.18', adjEps:'-0.18', epsEst:'~-0.22', surprise:'+0.04', ebitda:'~$15M',   netInc:'-$49M',  result:'Beat' },
+  { period:'Q2 2020', year:'2020', date:'Jul 2020',    rev:'$1.1B',   gaapEps:'-0.31', adjEps:'-0.31', epsEst:'~-0.37', surprise:'+0.06', ebitda:'~-$10M',  netInc:'-$108M', result:'Beat' },
+  { period:'Q3 2020', year:'2020', date:'Oct 2020',    rev:'$1.6B',   gaapEps:'-0.02', adjEps:'-0.02', epsEst:'~-0.08', surprise:'+0.06', ebitda:'~$90M',   netInc:'~$2M',   result:'Beat' },
+  { period:'Q4 2020', year:'2020', date:'Feb 2021',    rev:'$2.3B',   gaapEps:'+0.18', adjEps:'+0.20', epsEst:'~+0.10', surprise:'+0.10', ebitda:'~$340M',  netInc:'~$80M',  result:'Beat' },
+  // 2021
+  { period:'Q1 2021', year:'2021', date:'Apr 2021',    rev:'~$4.0B',  gaapEps:'+0.07', adjEps:'+0.10', epsEst:'~+0.02', surprise:'+0.08', ebitda:'~$450M',  netInc:'$41M',   result:'Beat' },
+  { period:'Q2 2021', year:'2021', date:'Jul 2021',    rev:'~$5.0B',  gaapEps:'+1.33', adjEps:'+1.38', epsEst:'~+1.10', surprise:'+0.28', ebitda:'~$1.2B',  netInc:'$795M',  result:'Beat' },
+  { period:'Q3 2021', year:'2021', date:'Oct 2021',    rev:'~$6.0B',  gaapEps:'+2.33', adjEps:'+2.40', epsEst:'~+2.00', surprise:'+0.40', ebitda:'~$1.8B',  netInc:'$1.3B',  result:'Beat' },
+  { period:'Q4 2021', year:'2021', date:'Feb 2022',    rev:'~$5.4B',  gaapEps:'+1.69', adjEps:'+1.84', epsEst:'~+1.55', surprise:'+0.29', ebitda:'~$1.4B',  netInc:'$899M',  result:'Beat' },
+  // 2022
+  { period:'Q1 2022', year:'2022', date:'Apr 2022',    rev:'$6.0B',   gaapEps:'+1.50', adjEps:'+1.68', epsEst:'~+1.40', surprise:'+0.28', ebitda:'~$1.2B',  netInc:'$801M',  result:'Beat' },
+  { period:'Q2 2022', year:'2022', date:'Jul 2022',    rev:'$6.3B',   gaapEps:'+1.13', adjEps:'+1.15', epsEst:'~+1.05', surprise:'+0.10', ebitda:'~$1.0B',  netInc:'$601M',  result:'Beat' },
+  { period:'Q3 2022', year:'2022', date:'Oct 2022',    rev:'$5.7B',   gaapEps:'+0.29', adjEps:'+0.29', epsEst:'~+0.45', surprise:'-0.16', ebitda:'~$500M',  netInc:'$165M',  result:'Miss' },
+  { period:'Q4 2022', year:'2022', date:'Feb 2023',    rev:'$5.0B',   gaapEps:'-0.41', adjEps:'-0.30', epsEst:'~-0.10', surprise:'-0.20', ebitda:'$123M',   netInc:'-$204M', result:'Miss' },
+  // 2023
+  { period:'Q1 2023', year:'2023', date:'Apr 2023',    rev:'$5.3B',   gaapEps:'-0.11', adjEps:'-0.05', epsEst:'~+0.05', surprise:'-0.10', ebitda:'$243M',   netInc:'-$42M',  result:'Miss' },
+  { period:'Q2 2023', year:'2023', date:'Jul 2023',    rev:'~$5.9B',  gaapEps:'+0.68', adjEps:'+0.70', epsEst:'~+0.73', surprise:'-0.03', ebitda:'~$780M',  netInc:'~$320M', result:'Miss' },
+  { period:'Q3 2023', year:'2023', date:'Oct 2023',    rev:'$5.6B',   gaapEps:'+0.52', adjEps:'+0.62', epsEst:'~+0.45', surprise:'+0.17', ebitda:'$614M',   netInc:'$275M',  result:'Beat' },
+  { period:'Q4 2023', year:'2023', date:'Jan 2024',    rev:'$5.1B',   gaapEps:'-0.31', adjEps:'-0.05', epsEst:'~+0.00', surprise:'-0.05', ebitda:'$279M',   netInc:'-$139M', result:'Miss' },
+  // 2024
+  { period:'Q1 2024', year:'2024', date:'Apr 2024',    rev:'$5.2B',   gaapEps:'-0.14', adjEps:'+0.18', epsEst:'+0.22',  surprise:'-0.04', ebitda:'$414M',   netInc:'-$53M',  result:'Miss' },
+  { period:'Q2 2024', year:'2024', date:'Jul 2024',    rev:'$5.1B',   gaapEps:'+0.00', adjEps:'+0.11', epsEst:'~+0.18', surprise:'-0.07', ebitda:'$323M',   netInc:'~$0M',   result:'Miss' },
+  { period:'Q3 2024', year:'2024', date:'Nov 2024',    rev:'$4.6B',   gaapEps:'-0.52', adjEps:'-0.33', epsEst:'-0.31',  surprise:'-0.02', ebitda:'~$100M',  netInc:'-$250M', result:'Miss' },
+  { period:'Q4 2024', year:'2024', date:'Feb 2025',    rev:'$4.3B',   gaapEps:'-0.92', adjEps:'-0.68', epsEst:'-0.66',  surprise:'-0.02', ebitda:'~-$50M',  netInc:'-$434M', result:'Miss' },
+  // 2025
+  { period:'Q1 2025', year:'2025', date:'Apr 2025',    rev:'$4.6B',   gaapEps:'-1.00', adjEps:'-0.92', epsEst:'~-0.60', surprise:'-0.32', ebitda:'-$174M',  netInc:'-$483M', result:'Miss' },
+  { period:'Q2 2025', year:'2025', date:'Jul 2025',    rev:'$4.9B',   gaapEps:'~-0.98',adjEps:'-0.50', epsEst:'-0.63',  surprise:'+0.13', ebitda:'$97M',    netInc:'-$470M', result:'Beat' },
+  { period:'Q3 2025', year:'2025', date:'Oct 2025',    rev:'$4.7B',   gaapEps:'~-0.49',adjEps:'-0.51', epsEst:'-0.45',  surprise:'-0.06', ebitda:'$143M',   netInc:'~-$235M',result:'Miss' },
+  { period:'Q4 2025', year:'2025', date:'Feb 2026',    rev:'$4.3B',   gaapEps:'-0.44', adjEps:'-0.43', epsEst:'-0.62',  surprise:'+0.19', ebitda:'~$80M',   netInc:'-$235M', result:'Beat' },
+];
+
+// ======== QUARTERLY TABLE ========
+function buildQuarterlyTable(filter) {
+  const tbody = document.getElementById('quarterly-tbody');
+  tbody.innerHTML = '';
+  let currentYear = '';
+  quarterlyData.forEach(q => {
+    if (filter !== 'all' && q.year !== filter) return;
+    if (q.year !== currentYear) {
+      currentYear = q.year;
+      const yr = document.createElement('tr');
+      yr.className = 'year-header';
+      yr.setAttribute('data-year', q.year);
+      yr.innerHTML = `<td colspan="10">── ${q.year} ──</td>`;
+      tbody.appendChild(yr);
+    }
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-year', q.year);
+    const isBeat = q.result === 'Beat';
+    const surpNum = parseFloat(q.surprise);
+    const surpClass = surpNum >= 0 ? 'pos' : 'neg';
+    const adjEpsNum = parseFloat(q.adjEps);
+    const adjEpsClass = adjEpsNum >= 0 ? 'pos' : 'neg';
+    const gaapEpsNum = parseFloat(q.gaapEps.replace('~',''));
+    const gaapEpsClass = gaapEpsNum >= 0 ? 'pos' : 'neg';
+    tr.innerHTML = `
+      <td><strong>${q.period}</strong></td>
+      <td>${q.date}</td>
+      <td>${q.rev}</td>
+      <td class="${gaapEpsClass}">${q.gaapEps}</td>
+      <td class="${adjEpsClass}">${q.adjEps}</td>
+      <td class="neu">${q.epsEst}</td>
+      <td class="${surpClass}">${q.surprise}</td>
+      <td>${q.ebitda}</td>
+      <td>${q.netInc}</td>
+      <td><span class="badge ${isBeat ? 'beat' : 'miss'}">${q.result}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function filterYear(year, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildQuarterlyTable(year);
+}
+
+buildQuarterlyTable('all');
+
+// ======== TABS ========
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'charts' && !chartsBuilt) buildCharts();
+}
+
+// ======== CHARTS ========
+let chartsBuilt = false;
+function buildCharts() {
+  chartsBuilt = true;
+  const grid = '#161b22';
+  const font = '#8b949e';
+  const defaults = {
+    responsive: true,
+    plugins: { legend: { labels: { color: font, font: { size: 11 } } }, tooltip: { backgroundColor: '#1c2128', titleColor: '#e6edf3', bodyColor: '#8b949e', borderColor: '#30363d', borderWidth: 1 } },
+    scales: {
+      x: { ticks: { color: font, font: { size: 10 } }, grid: { color: '#21262d' } },
+      y: { ticks: { color: font, font: { size: 10 } }, grid: { color: '#21262d' } }
+    }
+  };
+
+  // Annual Revenue
+  new Chart(document.getElementById('chart-revenue'), {
+    type: 'bar',
+    data: {
+      labels: ['2020','2021','2022','2023','2024','2025'],
+      datasets: [{
+        label: 'Annual Revenue ($B)',
+        data: [5.35, 20.4, 23.0, 22.0, 19.2, 18.6],
+        backgroundColor: ['#f85149aa','#3fb950aa','#3fb950aa','#d29922aa','#f85149aa','#f85149aa'],
+        borderColor: ['#f85149','#3fb950','#3fb950','#d29922','#f85149','#f85149'],
+        borderWidth: 2, borderRadius: 4
+      }]
+    },
+    options: { ...JSON.parse(JSON.stringify(defaults)) }
+  });
+
+  // Annual EPS
+  new Chart(document.getElementById('chart-eps-annual'), {
+    type: 'bar',
+    data: {
+      labels: ['2020','2021','2022','2023','2024','2025'],
+      datasets: [{
+        label: 'GAAP EPS ($)',
+        data: [-0.32, 5.36, 2.55, 0.78, -1.57, -2.91],
+        backgroundColor: [-0.32, 5.36, 2.55, 0.78, -1.57, -2.91].map(v => v >= 0 ? '#3fb950aa' : '#f85149aa'),
+        borderColor: [-0.32, 5.36, 2.55, 0.78, -1.57, -2.91].map(v => v >= 0 ? '#3fb950' : '#f85149'),
+        borderWidth: 2, borderRadius: 4
+      }]
+    },
+    options: { ...JSON.parse(JSON.stringify(defaults)) }
+  });
+
+  // Quarterly Revenue
+  const qLabels = quarterlyData.map(q => q.period.replace('20',''));
+  const qRevData = [0.359,1.1,1.6,2.3,4.0,5.0,6.0,5.4,6.0,6.3,5.7,5.0,5.3,5.9,5.6,5.1,5.2,5.1,4.6,4.3,4.6,4.9,4.7,4.3];
+  new Chart(document.getElementById('chart-q-revenue'), {
+    type: 'line',
+    data: {
+      labels: qLabels,
+      datasets: [{
+        label: 'Quarterly Revenue ($B)',
+        data: qRevData,
+        borderColor: '#58a6ff',
+        backgroundColor: 'rgba(88,166,255,0.1)',
+        fill: true, tension: 0.3, pointRadius: 3, pointHoverRadius: 5
+      }]
+    },
+    options: { ...JSON.parse(JSON.stringify(defaults)) }
+  });
+
+  // Quarterly Adj EPS
+  const qAdjEps = [-0.18,-0.31,-0.02,0.20, 0.10,1.38,2.40,1.84, 1.68,1.15,0.29,-0.30, -0.05,0.70,0.62,-0.05, 0.18,0.11,-0.33,-0.68, -0.92,-0.50,-0.51,-0.43];
+  const qEpsEst = [-0.22,-0.37,-0.08,0.10, 0.02,1.10,2.00,1.55, 1.40,1.05,0.45,-0.10, 0.05,0.73,0.45,0.00, 0.22,0.18,-0.31,-0.66, -0.60,-0.63,-0.45,-0.62];
+  new Chart(document.getElementById('chart-q-eps'), {
+    type: 'line',
+    data: {
+      labels: qLabels,
+      datasets: [
+        { label: 'Adj. EPS Actual', data: qAdjEps, borderColor: '#58a6ff', backgroundColor: 'rgba(88,166,255,0.08)', fill: false, tension: 0.3, pointRadius: 3 },
+        { label: 'Consensus Estimate', data: qEpsEst, borderColor: '#d29922', backgroundColor: 'transparent', borderDash: [4,4], fill: false, tension: 0.3, pointRadius: 2 }
+      ]
+    },
+    options: { ...JSON.parse(JSON.stringify(defaults)) }
+  });
+
+  // EBITDA
+  const qEbitda = [15,-10,90,340, 450,1200,1800,1400, 1200,1000,500,123, 243,780,614,279, 414,323,100,-50, -174,97,143,80];
+  const ebitdaColors = qEbitda.map(v => v >= 0 ? 'rgba(63,185,80,0.7)' : 'rgba(248,81,73,0.7)');
+  new Chart(document.getElementById('chart-ebitda'), {
+    type: 'bar',
+    data: {
+      labels: qLabels,
+      datasets: [{ label: 'Adj. EBITDA ($M)', data: qEbitda, backgroundColor: ebitdaColors, borderRadius: 3 }]
+    },
+    options: { ...JSON.parse(JSON.stringify(defaults)) }
+  });
+
+  // Net Debt
+  new Chart(document.getElementById('chart-debt'), {
+    type: 'line',
+    data: {
+      labels: ['2020','2021','2022','2023','2024','2025'],
+      datasets: [
+        { label: 'Net Debt ($B)', data: [4.8,3.1,3.0,2.9,2.4,1.3], borderColor: '#f85149', backgroundColor: 'rgba(248,81,73,0.1)', fill: true, tension: 0.3, pointRadius: 5 },
+        { label: 'Adj. EBITDA ($B)', data: [0.5,5.3,3.2,1.9,0.78,0.037], borderColor: '#3fb950', backgroundColor: 'rgba(63,185,80,0.08)', fill: false, tension: 0.3, pointRadius: 5 }
+      ]
+    },
+    options: { ...JSON.parse(JSON.stringify(defaults)) }
+  });
+}
+</script>
+</body>
+</html>
